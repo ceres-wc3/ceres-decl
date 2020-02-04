@@ -1,0 +1,12 @@
+{
+    "name": "ceres-decl",
+    "version": "1.0.0",
+    "description": "Declaration files for Ceres",
+    "repository": "https://github.com/ceres-wc3/ceres-decl",
+    "files": [
+        "**/*.d.ts"
+    ],
+    "scripts": {},
+    "author": "",
+    "license": "MIT"
+}
