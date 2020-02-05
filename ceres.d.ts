@@ -29,30 +29,6 @@ declare namespace ceres {
     const initialized: boolean
 
     /**
-     * Flag to indicate whether the currently executing code
-     * is running at compiletime.
-     *
-     * This can be used in shared code to distinguish between
-     * runtime and compiletime executions.
-     * @compiletime
-     */
-    const compiletime: boolean
-
-    /**
-     * Configuration used by Ceres to determine how to launch
-     * WC3 when running Ceres via `ceres run`.
-     * @compiletime
-     */
-    var runConfig: RunMapOptions
-
-    /**
-     * Configuration used by Ceres to get info about the directory
-     * layout of the project.
-     * @compiletime
-     */
-    var layout: CeresLayout
-
-    /**
      * Adds a hook to run at a certain point in the map lifecycle.
      *
      * Currently only two hooks are supported:
@@ -80,6 +56,42 @@ declare namespace ceres {
      * @runtime
      */
     function wrapSafeCall<C extends (...args: any[]) => any>(f: C): C
+
+    /**
+     * Suppresses the default main function, if there exists one.
+     * Should be called from within a `main` module.
+     */
+    function suppressDefaultMain(): void
+
+    /**
+     * Suppresses the default config function, if there exists one.
+     * Should be called from within a `config` module.
+     */
+    function suppressDefaultConfig(): void
+
+    /**
+     * Flag to indicate whether the currently executing code
+     * is running at compiletime.
+     *
+     * This can be used in shared code to distinguish between
+     * runtime and compiletime executions.
+     * @compiletime
+     */
+    const compiletime: boolean
+
+    /**
+     * Configuration used by Ceres to determine how to launch
+     * WC3 when running Ceres via `ceres run`.
+     * @compiletime
+     */
+    let runConfig: RunMapOptions
+
+    /**
+     * Configuration used by Ceres to get info about the directory
+     * layout of the project.
+     * @compiletime
+     */
+    let layout: CeresLayout
 
     /**
      * Adds a hook to be called after the map script has been built by Ceres.
@@ -714,4 +726,5 @@ declare function include(path: string): string
  * specified handler function.
  * @macro
  */
+// eslint-disable-next-line @typescript-eslint/camelcase
 declare function macro_define(name: string, handler: MacroFunction): void
