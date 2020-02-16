@@ -94,20 +94,39 @@ declare namespace ceres {
     let layout: CeresLayout
 
     /**
-     * Adds a hook to be called after the map script has been built by Ceres.
+     * Adds a hook to be called before the map script has been built by Ceres.
+     * The callback receives the map object being built and the map's original script, if one exists.
+     * The callback can be used to override the original map script by returning a string.
      *
      * `name` is used to distinguish between hooks when building maps multiple times.
      * @compiletime
      */
-    function addPostScriptBuildHook(name: string, callback: (...args: any[]) => void): void
+    function addPreScriptBuildHook(
+        name: string,
+        callback: (map: WarMap, mapScript: string) => void
+    ): void
 
     /**
-     * Adds a hook to be called after the map has been built by Ceres.
+     * Adds a hook to be called after the map script has been built by Ceres.
+     * The callback receives the map object being built and the map's script after it has been compiled by Ceres.
+     * The callback can be used to override the compiled map script by returning a string.
      *
      * `name` is used to distinguish between hooks when building maps multiple times.
      * @compiletime
      */
-    function addPostMapBuildHook(name: string, callback: (...args: any[]) => void): void
+    function addPostScriptBuildHook(
+        name: string,
+        callback: (map: WarMap, compiledScript: string) => void
+    ): void
+
+    /**
+     * Adds a hook to be called after the map has been built by Ceres, but before it was written out to disk as either MPQ or dir.
+     * The callback receives the map object that has just been built.
+     *
+     * `name` is used to distinguish between hooks when building maps multiple times.
+     * @compiletime
+     */
+    function addPostMapBuildHook(name: string, callback: (map: WarMap) => void): void
 
     /**
      * Adds a hook to be called after the game has been launched by Ceres.
@@ -115,7 +134,7 @@ declare namespace ceres {
      * `name` is used to distinguish between hooks when building maps multiple times.
      * @compiletime
      */
-    function addPostRunHook(name: string, callback: (...args: any[]) => void): void
+    function addPostRunHook(name: string, callback: () => void): void
 
     /**
      * Opens a WC3 map at the specified path.
@@ -149,6 +168,16 @@ declare namespace ceres {
      * @compiletime
      */
     function runMap(path: string): void
+
+    /**
+     * Returns the argumen string passed to the build script.
+     * E.g. if Ceres was launched with
+     * `ceres run -- --map mpq.w3x --output dir`
+     * this will return the string
+     * ` --map mpq.w3x --output dir`
+     * @compiletime
+     */
+    function getScriptArgs(): string
 }
 
 declare namespace fs {
@@ -258,9 +287,28 @@ declare namespace mpq {
     function open(path: string): MpqViewer | [false, string]
 }
 
+declare namespace arg {
+    /**
+     * Returns true if the given arg appeared in the build script arguments.
+     *
+     * E.g. `arg.exists("--flag")` will check if the command has had `--flag` passed to it.
+     * @compiletime
+     */
+    function exists(arg: string): boolean
+
+    /**
+     * Returns the value of the given arg if it appeared in the build script arguments.
+     *
+     * E.g. `arg.value("--map")` will return `mpq.w3x` if the command has had `--map mpq.w3x` passed to it.
+     * @compiletime
+     */
+    function value(arg: string): string | undefined
+}
+
 /**
  * A map build request.
  * Encapsulates possible parameters to ask of Ceres when building a map.
+ * @compiletime
  */
 interface BuildCommand {
     /**
@@ -281,6 +329,7 @@ interface BuildCommand {
 
 /**
  * A build artifact produced by a map compilation step.
+ * @compiletime
  */
 interface BuildArtifact {
     /**
@@ -329,6 +378,7 @@ declare interface MpqViewer {
 
 /**
  * Possible options to specify when adding a file to an MPQ archive.
+ * @compiletime
  */
 declare interface MpqAddOptions {
     /**
@@ -451,6 +501,8 @@ declare interface RunMapOptions {
 
 /**
  * Options that are passed to @see ceres.compileScript
+ *
+ * @compiletime
  */
 declare interface CompileOptions {
     /**
@@ -498,9 +550,9 @@ declare interface WarObject {
     clone(): WarObject
 
     /**
-     * Fields of this object.
+     * Gets a field on this object.
      *
-     * Two syntaxes are accepted:
+     * Two syntaxes are accepted for the `field` parameter:
      * 1) SLK-like, where fields have a 'proper' name, sometimes postfixed with
      * a number to indicate which level of the field to get/set. Examples include,
      * `Name`, `DataA1`, `DataC10`, etc.
@@ -508,7 +560,7 @@ declare interface WarObject {
      * to indicate which level to use, for fields which can have multiple levels.
      * E.g.: `unam`, `xxxx+1`, `xxxx+10`
      *
-     * The gotten/setted value will be automatically converted to the appropriate type if possible.
+     * The returned value will be automatically converted to the appropriate type.
      * WC3 has 4 fundamental types for fields:
      * real - standard float value
      * unreal - float value clamped between 0.0 and 1.0
@@ -516,8 +568,21 @@ declare interface WarObject {
      * string - null-terminated string
      *
      * Setting a field into null/undefined will reset it to its default value.
+     */
+    getField(field: string): string | number | undefined
+
+    /**
+     * Sets a field on this object.
      *
-     * Due to the limitations in TypeScript, this field does not have an appropriate type.
+     * See `getField` for field name syntax.
+     *
+     * Setting a field into null/undefined will reset it to its default value.
+     */
+    setField(field: string, value: string | number | undefined): void
+
+    /**
+     * Alternative syntax for setField/getField. Due to TypeScript limitations, this doesn't really
+     * work that well in TypeScript, however, it is available and may be more convenient in pure Lua projects.
      */
     [id: string]: any
 }
@@ -550,13 +615,10 @@ declare interface WarObjects {
     writeToString(): string
 
     /**
-     * WC3 Objects inside this object.
+     * Gets a reference to a WC3 object inside this storage.
      *
      * Index is a rawid. Upon getting an object, you get a
      * reference which you can use to mutate it.
-     *
-     * When setting an object, Ceres will clone the target
-     * and set the clone's id to that specified here.
      *
      * For example:
      *
@@ -572,12 +634,28 @@ declare interface WarObjects {
      * // this will only modify the clone now
      * myPea['Name'] = "Arnold"
      * currentMap.objects.units['yyyy'] = myPea
+     */
+    getObject(rawid: string): WarObject
+
+    /**
+     * Sets a WC3 object into this storage.
+     *
+     * Index is a rawid.
+     *
+     * When setting an object, Ceres will clone the target
+     * and set the clone's id to that specified here.
      *
      * Setting an object into null/undefined will reset it to defaults for a stock
      * object, and delete it for a custom object.
      *
-     * Due to the limitations in TypeScript, this field does not have an appropriate type.
-     * Cast into `WarObject` manually.
+     * See `getObject` fore example usage.
+     */
+    setObject(rawid: string, object: WarObject): void
+
+    /**
+     * Alternative syntax for setObject/getObject. Due to limitations in TypeScript,
+     * it's not very useful in TypeScript, however can still be used in pure Lua projects
+     * where it may be more convenient.
      */
     [id: string]: any
 }
@@ -603,12 +681,15 @@ declare interface WarMapObjects {
  * @compiletime
  */
 declare interface WarMap {
-    /** Reference to all objects in this map. */
+    /** Reference to all object storage in this map. */
     objects: WarMapObjects
 
     /**
      * Reads a file from the map. Returns the file contents as a
      * string upon success, or false + an error message upon failure.
+     *
+     * This function will also "see" any files previously added to the map
+     * via `addFileString`, `addFileDisk` or `addDir`.
      *
      * @tupleReturn
      */
@@ -686,6 +767,8 @@ declare function log(...args: any[]): void
  *
  * Keep in mind that the injected code will be interpreted
  * as Lua, not TypeScript.
+ *
+ * @compiletime
  */
 declare interface MacroFunction {
     (...args: any[]): string | null
@@ -703,6 +786,7 @@ declare interface MacroFunction {
  *
  * If the result evaluated to nothing, then nothing is injected into the source.
  * @macro
+ * @compiletime
  */
 declare function compiletime<R extends string | number | object | null | undefined>(
     arg: R | (() => R)
@@ -714,6 +798,7 @@ declare function compiletime<R extends string | number | object | null | undefin
  *
  * Will cause a compilation error if the file could not be read.
  * @macro
+ * @compiletime
  */
 declare function include(path: string): string
 
@@ -725,6 +810,7 @@ declare function include(path: string): string
  * will be interpreted as a macro call, and Ceres will call the
  * specified handler function.
  * @macro
+ * @compiletime
  */
 // eslint-disable-next-line @typescript-eslint/camelcase
 declare function macro_define(name: string, handler: MacroFunction): void
