@@ -462,7 +462,7 @@ declare interface CeresLayout {
      * Directories to be tried, in order, by the module resolution
      * algorithm of Ceres when compiling the script.
      */
-    srcDirectories: [string]
+    srcDirectories: string[]
 
     /**
      * Where to put build artifacts.
