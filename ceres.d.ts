@@ -178,6 +178,13 @@ declare namespace ceres {
      * @compiletime
      */
     function getScriptArgs(): string
+
+    /**
+     * Suppress default build handler.
+     * Used for custom workflows.
+     * @compiletime
+     */
+    function suppressDefaultHandler(): void
 }
 
 declare namespace fs {
