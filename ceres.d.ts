@@ -609,6 +609,9 @@ declare interface WarObjects {
     /** Type string for this WC3 object type. */
     typestr: objectType
 
+    /** Marker whether any object data here has been modified since loading. Used by Ceres to prevent writing out unmodified object stores. */
+    isDirty: boolean
+
     /**
      * Reads WC3 objects from the supplied string into this object.
      * The expected format is that of WC3 object data files, which is the same for all object data types.
