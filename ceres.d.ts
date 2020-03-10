@@ -542,8 +542,8 @@ declare interface WarObject {
     /** This object's id as a string. */
     id: string
 
-    /** Parent's id as a string. */
-    parentId: string
+    /** Parent's id as a string. Undefined if this object has no parent, i.e. it is defined by WC3 data itself. */
+    parentId: string | undefined
 
     /** This object's type. */
     type: objectType
