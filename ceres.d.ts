@@ -601,7 +601,7 @@ declare interface WarObject {
  */
 declare interface WarObjects {
     /** All WC3 objects of this type in the map. Meant for iteration. */
-    all: WarObject[]
+    all: { [id: string]: WarObject }
 
     /** Extension string for this WC3 object type. */
     ext: objectExt
