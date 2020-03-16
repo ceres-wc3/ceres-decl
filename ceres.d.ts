@@ -281,6 +281,7 @@ declare namespace fs {
      * Removes a file,
      * returning nothing if successful, and false and an error if failed.
      * @compiletime
+     * @tuplereturn
      */
     function removeFile(path: string): [undefined] | [false, string]
 
@@ -290,6 +291,7 @@ declare namespace fs {
      *
      * Only removes empty directories.
      * @compiletime
+     * @tuplereturn
      */
     function removeDir(path: string): [undefined] | [false, string]
 }
