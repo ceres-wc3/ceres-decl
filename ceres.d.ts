@@ -194,7 +194,7 @@ declare namespace fs {
      * @compiletime
      * @tuplereturn
      */
-    function readFile(path: string): string | [false, string]
+    function readFile(path: string): [string] | [false, string]
 
     /**
      * Writes a file at the specified path and content,
@@ -202,7 +202,7 @@ declare namespace fs {
      * @compiletime
      * @tuplereturn
      */
-    function writeFile(path: string, content: string): undefined | [false, string]
+    function writeFile(path: string, content: string): [undefined] | [false, string]
 
     /**
      * Copies a file from a source to another destiantion,
@@ -210,7 +210,7 @@ declare namespace fs {
      * @compiletime
      * @tuplereturn
      */
-    function copyFile(from: string, to: string): undefined | [false, string]
+    function copyFile(from: string, to: string): [undefined] | [false, string]
 
     /**
      * Copies one directory into another, recursively. Returns true if successful,
@@ -222,7 +222,7 @@ declare namespace fs {
      * @compiletime
      * @tuplereturn
      */
-    function copyDir(from: string, to: string): true | [false, string]
+    function copyDir(from: string, to: string): [true] | [false, string]
 
     /**
      * Reads directories and files at the specified directory,
@@ -265,7 +265,7 @@ declare namespace fs {
      * @compiletime
      * @tuplereturn
      */
-    function absolutize(path: string): string | [false, string]
+    function absolutize(path: string): [string] | [false, string]
 
     /**
      * 'Watches' a file for changes, calling the specified callback
@@ -276,6 +276,22 @@ declare namespace fs {
      * @tuplereturn
      */
     function watchFile(path: string, callback: (data: string) => void): [false, string]
+
+    /**
+     * Removes a file,
+     * returning nothing if successful, and false and an error if failed.
+     * @compiletime
+     */
+    function removeFile(path: string): [undefined] | [false, string]
+
+    /**
+     * Removes a directory,
+     * returning nothing if successful, and false and an error if failed.
+     *
+     * Only removes empty directories.
+     * @compiletime
+     */
+    function removeDir(path: string): [undefined] | [false, string]
 }
 
 declare namespace mpq {
